@@ -1,0 +1,34 @@
+name: Combine PDF chunks
+on:
+  push:
+    branches: [main, master]
+jobs:
+  combine:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Combine chunks into PDFs
+        run: |
+          for pattern in "5上.pdf" "5下.pdf" "7上.pdf" "7下.pdf" "8上.pdf" "8下.pdf" "9上.pdf" "9下.pdf"; do
+            base="${pattern%.pdf}"
+            parts=$(ls "${base}.pdf.part."* 2>/dev/null | sort || true)
+            if [ -n "$parts" ]; then
+              cat $parts > "$pattern"
+              echo "Combined $pattern"
+              rm -f $parts
+              git add "$pattern"
+            fi
+          done
+      - name: Commit and push
+        run: |
+          git config user.name "combine-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Combine PDF chunks"
+            git push
+          fi
