@@ -1,0 +1,22 @@
+name: Combine PDF chunks
+on: [push]
+jobs:
+  combine:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          for p in 5上.pdf 5下.pdf 7上.pdf 7下.pdf 8上.pdf 8下.pdf 9上.pdf 9下.pdf; do
+            base="${p%.pdf}"
+            parts=$(ls "$base.pdf.part."* 2>/dev/null | sort)
+            if [ -n "$parts" ]; then
+              echo "Combining $p..."
+              cat $parts > "$p"
+              rm -f $parts
+              git add "$p"
+            fi
+          done
+          git config user.name bot && git config user.email bot@c
+          git diff --staged --quiet || (git commit -m 'combine pdfs' && git push)
